@@ -2,7 +2,9 @@
     var APP_ICON = "https://datastandard.blob.core.windows.net/botimg/58b03e5e525d6005b8667ad0-logo";
     // CREDIT FOR MODEL: dave404 - https://poly.google.com/view/f_WeaXnvG0T
     var BOT_MODEL = "https://brandf.github.io/HighFidelity/model.fbx";
-    var MAX_VELOCITY = 0.1;
+    var MAX_VELOCITY = 0.03;
+    var debugDesired = false;
+
     String.prototype.hashCode = function() {
     var hash = 0, i, chr;
     if (this.length === 0) return hash;
@@ -20,7 +22,7 @@
         text: "mybot",
         icon: APP_ICON
     });
-    var debugDesired = false;
+    
 
     var mybot = {};
     button.clicked.connect(function() {
@@ -51,6 +53,7 @@
             iError: 0,
             velocity: { x: 0, y: 0, z: 0 },
             position: Vec3.sum(MyAvatar.position, Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -3 })),
+            rotation: Quat.fromPitchYawRollDegrees(0,0,0),
         };
         chooseTargetAvatar();
         addMyBot();
@@ -116,9 +119,9 @@
             var avatar = AvatarManager.getAvatar(mybot.targetAvatar);
             mybot.props = Entities.getEntityProperties(mybot.entityID);
             mybot.desiredPosition = Vec3.sum(avatar.position, {
-                x: 0.5 * Math.cos(mybot.props.age * 3),
-                y: 1.5,
-                z: 0.5 * Math.sin(mybot.props.age * 3),
+                x: 0.5 * Math.cos(mybot.props.age * 2),
+                y: 1.5 + 0.1 * Math.cos(Math.PI + mybot.props.age * 4),
+                z: 0.5 * Math.sin(mybot.props.age * 2),
             });
             
             if (debugDesired) {
@@ -146,10 +149,11 @@
                 mybot.velocity = Vec3.multiply(Vec3.normalize(mybot.velocity), MAX_VELOCITY / dt);
             }
             mybot.position = Vec3.sum(mybot.position, Vec3.multiply(mybot.velocity, dt));
-
+            mybot.desiredPosition = Quat.lookAtSimple(mybot.position, Vec3.subtract(mybot.position, mybot.velocity));
+            mybot.rotation = Quat.slerp(mybot.rotation, mybot.desiredPosition, dt * 1.5);
             Entities.editEntity(mybot.entityID, {
                 position: mybot.position,
-                color: mybot.color,
+                rotation: mybot.rotation,
             });
         }
     });
